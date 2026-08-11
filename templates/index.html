@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <meta name="theme-color" content="#123c69">
+
+        <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+        <title>SafeShield</title>
+    </head>
+
+    <title>PhiloShield</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/shelter">🗺️ Nearby Safe Places</a>
+        <a href="/alerts">🚨 Alerts</a>
+        <a href="/kit">🎒 Emergency Kit</a>
+        <a href="/family">👨‍👩‍👧 Family Plan</a>
+        <a href="/contacts">☎️ Contacts</a>
+    </nav>
+
+    <header class="app-header">
+        <div class="logo-area">
+
+            <div>
+                <div class="logo-area">
+
+                    <img src="{{ url_for('static', filename='icons/icon-192.png') }}" alt="PhiloShield Logo"
+                        class="app-logo">
+
+                    <div>
+                        <h1>PhiloShield</h1>
+                        <p>Your Emergency Safety Companion</p>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard">
+
+        <section class="status-card">
+            <div class="status-top">
+                <div>
+                    <p class="section-label">CURRENT STATUS</p>
+                    <h2>All Clear</h2>
+                </div>
+
+                <div class="status-dot"></div>
+            </div>
+
+            <div class="status-normal">
+                NORMAL
+            </div>
+
+            <p class="status-message">
+                No official emergency alert has been received.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="section-title">Quick Actions</h2>
+
+            <div class="action-grid">
+
+                <a href="/shelter" class="action-card">
+                    <span class="action-icon">🗺️</span>
+                    <h3>Safe Places</h3>
+                    <p>Find nearby emergency resources.</p>
+                </a>
+
+                <a href="/alerts" class="action-card">
+                    <span class="action-icon">🚨</span>
+                    <h3>Emergency Alerts</h3>
+                    <p>View official safety information.</p>
+                </a>
+
+                <a href="/kit" class="action-card">
+                    <span class="action-icon">🎒</span>
+                    <h3>Emergency Kit</h3>
+                    <p>Prepare important supplies.</p>
+                </a>
+
+                <a href="/family" class="action-card">
+                    <span class="action-icon">👨‍👩‍👧</span>
+                    <h3>Family Plan</h3>
+                    <p>Plan contacts and meeting places.</p>
+                </a>
+
+                <a href="/contacts" class="action-card">
+                    <span class="action-icon">☎️</span>
+
+                    <h3>Emergency Contacts</h3>
+
+                    <p>Save important phone numbers.</p>
+                </a>
+
+                <a href="/weather" class="action-card">
+                    <span class="action-icon">🌦️</span>
+
+                    <h3>Weather</h3>
+
+                    <p>Current weather and forecast.</p>
+                </a>
+
+                <button class="action-card" onclick="location.href='/flashlight'">
+                    <span class="action-icon">🔦</span>
+                    <h3>Flashlight & Emergency Alarm</h3>
+                    <p>Bright screen, SOS strobe, and emergency alarm.</p>
+                </button>
+
+                <a href="/sos" class="action-card">
+                    <span class="action-icon">🆘</span>
+                    <h3>SOS Emergency</h3>
+                    <p>Call 911 and share your current location.</p>
+                </a>
+
+                <a href="/firstaid" class="action-card">
+                    <span class="action-icon">⛑️</span>
+                    <h3>First Aid Guide</h3>
+                    <p>Quick step-by-step emergency instructions.</p>
+                </a>
+
+                <a href="/medicalid" class="action-card">
+                    <span class="action-icon">🪪</span>
+
+                    <h3>Medical ID</h3>
+
+                    <p>View important emergency medical information.</p>
+                </a>
+
+
+            </div>
+        </section>
+
+        <section class="tips-card">
+            <p class="section-label">SAFETY TIP</p>
+
+            <h2>Get inside, stay inside, stay informed.</h2>
+
+            <p>
+                Keep emergency supplies ready and review your family safety plan regularly.
+            </p>
+
+        </section>
+
+    </main>
+
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", function () {
+                navigator.serviceWorker
+                    .register("/service-worker.js")
+                    .then(function () {
+                        console.log("PhiloShield service worker registered.");
+                    })
+                    .catch(function (error) {
+                        console.error(
+                            "Service worker registration failed:",
+                            error
+                        );
+                    });
+            });
+        }
+    </script>
+
+</body>
+
+</html>

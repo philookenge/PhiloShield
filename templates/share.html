@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Share My Location</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/shelter">🗺️ Safe Places</a>
+        <a href="/alerts">🚨 Alerts</a>
+        <a href="/kit">🎒 Kit</a>
+        <a href="/family">👨‍👩‍👧 Family</a>
+        <a href="/contacts">☎️ Contacts</a>
+        <a href="/weather">🌦️ Weather</a>
+        <a href="/sos">🆘 SOS</a>
+        <a href="/firstaid">⛑️ First Aid</a>
+        <a href="/flashlight">🔦 Flashlight</a>
+        <a href="/medicalid">🪪 Medical ID</a>
+        <a href="/share">📍 Share Location</a>
+    </nav>
+
+    <div class="container">
+
+        <div class="page-header">
+            <h1>📍 Share My Location</h1>
+            <p>Quickly share your current GPS location during an emergency.</p>
+        </div>
+
+        <section class="status-card">
+
+            <button id="getLocationButton">
+                📍 Get My Location
+            </button>
+
+            <div id="locationResult"></div>
+
+        </section>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/share.js') }}"></script>
+
+</body>
+
+</html>

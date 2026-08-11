@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Medical ID</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/shelter">🗺️ Safe Places</a>
+        <a href="/alerts">🚨 Alerts</a>
+        <a href="/kit">🎒 Kit</a>
+        <a href="/family">👨‍👩‍👧 Family</a>
+        <a href="/contacts">☎️ Contacts</a>
+        <a href="/weather">🌦️ Weather</a>
+        <a href="/sos">🆘 SOS</a>
+        <a href="/firstaid">⛑️ First Aid</a>
+        <a href="/flashlight">🔦 Flashlight</a>
+        <a href="/medicalid">🪪 Medical ID</a>
+    </nav>
+
+    <div class="container">
+
+        <div class="page-header">
+            <h1>🪪 Emergency Medical ID</h1>
+            <p>Store important medical details for an emergency.</p>
+        </div>
+
+        <section class="status-card">
+
+            <form id="medicalIdForm">
+
+                <label for="fullName">
+                    Full Name
+                </label>
+                <input type="text" id="fullName" placeholder="Enter your full name">
+
+                <label for="dateOfBirth">
+                    Date of Birth
+                </label>
+                <input type="date" id="dateOfBirth">
+
+                <label for="bloodType">
+                    Blood Type
+                </label>
+                <select id="bloodType">
+                    <option value="">Select blood type</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A−</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B−</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB−</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O−</option>
+                    <option value="Unknown">Unknown</option>
+                </select>
+
+                <label for="allergies">
+                    Allergies
+                </label>
+                <textarea id="allergies" placeholder="Example: Penicillin, peanuts"></textarea>
+
+                <label for="medications">
+                    Current Medications
+                </label>
+                <textarea id="medications" placeholder="List medicines or write None"></textarea>
+
+                <label for="conditions">
+                    Medical Conditions
+                </label>
+                <textarea id="conditions" placeholder="Example: Asthma, diabetes"></textarea>
+
+                <label for="emergencyContact">
+                    Emergency Contact Name
+                </label>
+                <input type="text" id="emergencyContact" placeholder="Enter contact name">
+
+                <label for="emergencyPhone">
+                    Emergency Contact Phone
+                </label>
+                <input type="tel" id="emergencyPhone" placeholder="Enter phone number">
+
+                <label for="organDonor">
+                    Organ Donor
+                </label>
+                <select id="organDonor">
+                    <option value="">Select an option</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                    <option value="Not specified">Not specified</option>
+                </select>
+
+                <button type="submit">
+                    💾 Save Medical ID
+                </button>
+
+            </form>
+
+            <p id="medicalIdMessage"></p>
+
+            <div id="savedMedicalId"></div>
+
+        </section>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/medicalid.js') }}"></script>
+
+</body>
+
+</html>

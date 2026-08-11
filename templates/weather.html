@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/shelter">🗺️ Nearby Safe Places</a>
+        <a href="/alerts">🚨 Alerts</a>
+        <a href="/kit">🎒 Emergency Kit</a>
+        <a href="/family">👨‍👩‍👧 Family Plan</a>
+        <a href="/contacts">☎️ Contacts</a>
+        <a href="/weather">🌦️ Weather</a>
+    </nav>
+
+    <div class="container">
+
+        <div class="page-header">
+            <h1>🌦️ Live Weather</h1>
+            <p>Current weather for your location.</p>
+        </div>
+
+        <section class="status-card">
+            <div id="weatherContainer">
+                <p>Loading weather...</p>
+            </div>
+            <div id="forecastContainer"></div>
+
+        </section>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/weather.js') }}"></script>
+
+</body>
+
+</html>

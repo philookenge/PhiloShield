@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashlight & Alarm</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/shelter">🗺️ Safe Places</a>
+        <a href="/alerts">🚨 Alerts</a>
+        <a href="/kit">🎒 Kit</a>
+        <a href="/family">👨‍👩‍👧 Family</a>
+        <a href="/contacts">☎️ Contacts</a>
+        <a href="/weather">🌦️ Weather</a>
+        <a href="/sos">🆘 SOS</a>
+        <a href="/firstaid">⛑️ First Aid</a>
+        <a href="/flashlight">🔦 Flashlight</a>
+    </nav>
+
+    <div class="container">
+
+        <div class="page-header">
+            <h1>🔦 Flashlight & Emergency Alarm</h1>
+            <p>Use your screen to attract attention during an emergency.</p>
+        </div>
+
+        <section class="status-card">
+
+            <button id="flashlightButton">
+                🔦 Bright Screen
+            </button>
+
+            <button id="strobeButton">
+                🚨 Start SOS Strobe
+            </button>
+
+            <button id="alarmButton">
+                🔊 Start Alarm
+            </button>
+
+            <button id="stopButton">
+                ⏹️ Stop Everything
+            </button>
+
+            <p id="flashlightStatus">
+                Select an emergency tool.
+            </p>
+
+        </section>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/flashlight.js') }}"></script>
+
+</body>
+
+</html>

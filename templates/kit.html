@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Emergency Kit</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/shelter">🗺️ Nearby Safe Places</a>
+        <a href="/alerts">🚨 Alerts</a>
+        <a href="/kit">🎒 Emergency Kit</a>
+        <a href="/family">👨‍👩‍👧 Family Plan</a>
+    </nav>
+
+    <div class="container">
+
+        <div class="page-header">
+            <h1>🎒 Emergency Kit</h1>
+
+            <p>
+                Prepare important supplies before an emergency happens.
+            </p>
+        </div>
+
+        <section class="status-card">
+            <h2>Emergency Kit Checklist</h2>
+
+            <label>
+                <input type="checkbox">
+                Water
+            </label>
+
+            <br><br>
+
+            <label>
+                <input type="checkbox">
+                Non-perishable food
+            </label>
+
+            <br><br>
+
+            <label>
+                <input type="checkbox">
+                Flashlight and batteries
+            </label>
+
+            <br><br>
+
+            <label>
+                <input type="checkbox">
+                First-aid supplies
+            </label>
+
+            <br><br>
+
+            <label>
+                <input type="checkbox">
+                Medications
+            </label>
+
+            <br><br>
+
+            <label>
+                <input type="checkbox">
+                Phone charger
+            </label>
+
+            <br><br>
+
+            <label>
+                <input type="checkbox">
+                Important documents
+            </label>
+        </section>
+
+    </div>
+    <script src="{{ url_for('static', filename='js/kit.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Emergency Plan</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/shelter">🗺️ Nearby Safe Places</a>
+        <a href="/alerts">🚨 Alerts</a>
+        <a href="/kit">🎒 Emergency Kit</a>
+        <a href="/family">👨‍👩‍👧 Family Plan</a>
+    </nav>
+
+    <div class="container">
+
+        <div class="page-header">
+            <h1>👨‍👩‍👧 Family Emergency Plan</h1>
+
+            <p>
+                Save important family emergency information.
+            </p>
+        </div>
+
+        <section class="status-card">
+
+            <label>Family Member</label>
+            <input type="text" id="memberName">
+
+            <br><br>
+
+            <label>Phone Number</label>
+            <input type="text" id="memberPhone">
+
+            <br><br>
+
+            <label>Meeting Place</label>
+            <input type="text" id="meetingPlace">
+
+            <br><br>
+
+            <button id="savePlan">
+                Save Plan
+            </button>
+            <div id="savedFamilyList"></div>
+        </section>
+
+    </div>
+    <script src="{{ url_for('static', filename='js/family.js') }}"></script>
+</body>
+
+</html>

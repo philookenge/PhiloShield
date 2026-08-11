@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOS Emergency</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/shelter">🗺️ Safe Places</a>
+        <a href="/alerts">🚨 Alerts</a>
+        <a href="/kit">🎒 Kit</a>
+        <a href="/family">👨‍👩‍👧 Family</a>
+        <a href="/contacts">☎️ Contacts</a>
+        <a href="/weather">🌦️ Weather</a>
+        <a href="/sos">🆘 SOS</a>
+    </nav>
+
+    <div class="container">
+
+        <div class="page-header">
+            <h1>🆘 SOS Emergency</h1>
+            <p>Use only in an emergency.</p>
+        </div>
+
+        <div class="status-card">
+
+            <button id="sosButton" class="danger-button">
+                🆘 ACTIVATE SOS
+            </button>
+
+            <div id="sosStatus"></div>
+
+        </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/sos.js') }}"></script>
+
+</body>
+
+</html>

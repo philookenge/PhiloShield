@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Alerts</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/shelter">🗺️ Nearby Safe Places</a>
+        <a href="/alerts">🚨 Alerts</a>
+        <a href="/kit">🎒 Emergency Kit</a>
+        <a href="/family">👨‍👩‍👧 Family Plan</a>
+    </nav>
+    <div class="container">
+
+        <div class="page-header">
+            <h1>🚨 Emergency Alerts</h1>
+
+            <p>
+                Stay informed with official alerts near your current location.
+            </p>
+        </div>
+
+        <button onclick="loadAlerts()">
+            Refresh Alerts
+        </button>
+
+        <br><br>
+
+        <div id="alertsContainer">
+
+            <p>Loading alerts...</p>
+
+        </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/alerts.js') }}"></script>
+
+</body>
+
+</html>
