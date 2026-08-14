@@ -1,4 +1,4 @@
-const CACHE_NAME = "philoshield-v3";
+const CACHE_NAME = "philoshield-v4";
 
 const FILES_TO_CACHE = [
     "/",
@@ -11,6 +11,10 @@ const FILES_TO_CACHE = [
     "/share",
     "/flashlight",
     "/sos",
+
+    "/static/manifest.json",
+    "/static/icons/icon-192.png",
+    "/static/icons/icon-512.png",
 
     "/static/css/style.css",
 

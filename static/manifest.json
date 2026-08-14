@@ -1,6 +1,6 @@
 {
-    "name": "Okenge Philo SafeShield",
-    "short_name": "Philo Shield",
+    "name": "PhiloShield",
+    "short_name": "PhiloShield",
     "description": "Emergency safety tools, weather, first aid, SOS, and nearby resources.",
     "start_url": "/",
     "scope": "/",
