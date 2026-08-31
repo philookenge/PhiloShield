@@ -1,4 +1,4 @@
-const CACHE_NAME = "philoshield-v4";
+const CACHE_NAME = "philoshield-v5";
 
 const FILES_TO_CACHE = [
     "/",
@@ -32,6 +32,8 @@ const FILES_TO_CACHE = [
 
 
 self.addEventListener("install", function (event) {
+    self.skipWaiting();
+
     event.waitUntil(
         caches.open(CACHE_NAME).then(function (cache) {
             return cache.addAll(FILES_TO_CACHE);
@@ -39,24 +41,71 @@ self.addEventListener("install", function (event) {
     );
 });
 
+self.addEventListener("activate", function (event) {
+    event.waitUntil(
+        caches.keys().then(function (cacheNames) {
+            return Promise.all(
+                cacheNames.map(function (cacheName) {
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(function () {
+            return self.clients.claim();
+        })
+    );
+});
+
+
 self.addEventListener("fetch", function (event) {
+
+    // For pages: try the newest online version first.
+    if (event.request.mode === "navigate") {
+        event.respondWith(
+            fetch(event.request)
+                .then(function (response) {
+                    return response;
+                })
+                .catch(function () {
+                    return caches.match(event.request)
+                        .then(function (cachedResponse) {
+                            return cachedResponse || caches.match("/offline");
+                        });
+                })
+        );
+
+        return;
+    }
+
+    // For CSS, JS, icons, audio, etc.
     event.respondWith(
         caches.match(event.request)
             .then(function (cachedResponse) {
-
-                if (cachedResponse) {
-                    return cachedResponse;
-                }
-
-                return fetch(event.request)
-                    .catch(function () {
-
-                        if (event.request.mode === "navigate") {
-                            return caches.match("/offline");
-                        }
-
-                        throw new Error("Offline resource unavailable.");
-                    });
+                return cachedResponse || fetch(event.request);
             })
+    );
+});
+
+self.addEventListener("push", function (event) {
+    let data = {
+        title: "PhiloShield Emergency Alert",
+        body: "You have a new emergency notification."
+    };
+
+    if (event.data) {
+        try {
+            data = event.data.json();
+        } catch (error) {
+            data.body = event.data.text();
+        }
+    }
+
+    event.waitUntil(
+        self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: "/static/icons/icon-192.png",
+            badge: "/static/icons/icon-192.png"
+        })
     );
 });

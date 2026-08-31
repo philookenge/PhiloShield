@@ -83,6 +83,12 @@
                     <p>View official safety information.</p>
                 </a>
 
+                <button class="action-card" id="enableNotificationsBtn">
+                    <span class="action-icon">🔔</span>
+                    <h3>Enable Notifications</h3>
+                    <p>Allow PhiloShield to send emergency alerts.</p>
+                </button>
+
                 <a href="/kit" class="action-card">
                     <span class="action-icon">🎒</span>
                     <h3>Emergency Kit</h3>
@@ -170,7 +176,86 @@
                     });
             });
         }
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = "=".repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/-/g, "+")
+                .replace(/_/g, "/");
+
+            const rawData = window.atob(base64);
+
+            return Uint8Array.from(
+                [...rawData].map(char => char.charCodeAt(0))
+            );
+        }
+        const VAPID_PUBLIC_KEY = "BAE_u0BkJ87Q3ghd6igvOdbv5-j0LufL6qLLFZpwm19tdio9DPx70aaORq83oR1bhLjo-lzoauv9vjL2trLODUI";
+
+        const notificationButton =
+            document.getElementById("enableNotificationsBtn");
+        if (notificationButton) {
+            notificationButton.addEventListener("click", async function () {
+
+                if (!("Notification" in window)) {
+                    alert("Notifications are not supported on this device.");
+                    return;
+                }
+
+                const permission = await Notification.requestPermission();
+
+                if (permission === "granted") {
+
+                    const registration =
+                        await navigator.serviceWorker.ready;
+
+                    let subscription =
+                        await registration.pushManager.getSubscription();
+
+                    if (subscription) {
+                        await subscription.unsubscribe();
+                    }
+
+                    subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey:
+                            urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
+
+                    const response = await fetch("/subscribe", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(subscription)
+                    });
+
+                    const result = await response.json();
+
+                    console.log(result);
+
+
+                    await registration.showNotification(
+                        "🚨 PhiloShield Test Alert",
+                        {
+                            body: "Notifications are working correctly.",
+                            icon: "/static/icons/icon-192.png"
+                        }
+                    );
+
+                } else if (permission === "denied") {
+
+                    alert("Notifications were blocked.");
+
+                } else {
+
+                    alert("Notification permission was not granted.");
+
+                }
+            });
+        }
     </script>
+
+
 
 </body>
 

@@ -1,7 +1,314 @@
 from flask import Flask, render_template, jsonify, request, send_from_directory
 import requests
+import json
+import os
+import threading
+import time
+from pywebpush import webpush, WebPushException
 
 app = Flask(__name__)
+
+VAPID_PRIVATE_KEY = os.path.join(
+    os.path.dirname(__file__),
+    "private_key.pem"
+)
+
+VAPID_CLAIMS = {
+    "sub": "mailto:philookenge37@gmail.com"
+}
+
+SUBSCRIPTIONS_FILE = os.path.join(
+    os.path.dirname(__file__),
+    "subscriptions.json"
+)
+
+ALERT_HISTORY_FILE = os.path.join(
+    os.path.dirname(__file__),
+    "alert_history.json"
+)
+
+LAST_LOCATION_FILE = os.path.join(
+    os.path.dirname(__file__),
+    "last_location.json"
+)
+
+def load_subscriptions():
+    if not os.path.exists(SUBSCRIPTIONS_FILE):
+        return []
+
+    try:
+        with open(SUBSCRIPTIONS_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+def save_subscriptions(subscriptions):
+    with open(SUBSCRIPTIONS_FILE, "w", encoding="utf-8") as file:
+        json.dump(subscriptions, file, indent=2)
+
+def save_last_location(latitude, longitude):
+    data = {
+        "lat": latitude,
+        "lon": longitude
+    }
+
+    with open(LAST_LOCATION_FILE, "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=2)
+
+
+def load_last_location():
+    if not os.path.exists(LAST_LOCATION_FILE):
+        return None
+
+    try:
+        with open(LAST_LOCATION_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+def automatic_alert_checker():
+    while True:
+        try:
+            location = load_last_location()
+
+            if location:
+                latitude = location.get("lat")
+                longitude = location.get("lon")
+
+                if latitude is not None and longitude is not None:
+                    api_url = (
+                        "https://api.weather.gov/alerts/active"
+                        f"?point={latitude},{longitude}"
+                    )
+
+                    headers = {
+                        "User-Agent": (
+                            "PhiloShield-Emergency-App/1.0 "
+                            "(contact: philookenge37@gmail.com)"
+                        ),
+                        "Accept": "application/geo+json"
+                    }
+
+                    response = requests.get(
+                        api_url,
+                        headers=headers,
+                        timeout=20
+                    )
+
+                    response.raise_for_status()
+                    weather_data = response.json()
+
+                    alerts = []
+
+                    for feature in weather_data.get("features", []):
+                        properties = feature.get("properties", {})
+
+                        alerts.append({
+                            "id": feature.get("id"),
+                            "event": properties.get(
+                                "event",
+                                "Emergency Alert"
+                            ),
+                            "headline": properties.get(
+                                "headline",
+                                "No headline available."
+                            )
+                        })
+
+                    if alerts:
+                        alert_history = load_alert_history()
+                        first_alert = alerts[0]
+                        alert_id = first_alert.get("id")
+
+                        if alert_id and alert_id not in alert_history:
+                            send_push_message(
+                                first_alert.get(
+                                    "event",
+                                    "PhiloShield Emergency Alert"
+                                ),
+                                first_alert.get(
+                                    "headline",
+                                    "An official emergency alert is active."
+                                )
+                            )
+
+                            alert_history.append(alert_id)
+                            save_alert_history(alert_history)
+
+        except Exception as error:
+            print(
+                "Automatic alert checker error:",
+                error
+            )
+
+        time.sleep(300)
+
+
+@app.route("/subscribe", methods=["POST"])
+def subscribe():
+    subscription = request.get_json()
+
+    if not subscription:
+        return jsonify({
+            "success": False,
+            "message": "No subscription received."
+        }), 400
+
+    subscriptions = load_subscriptions()
+
+    # Avoid saving the same browser subscription multiple times
+    endpoint = subscription.get("endpoint")
+
+    already_saved = any(
+        saved.get("endpoint") == endpoint
+        for saved in subscriptions
+    )
+
+    if not already_saved:
+        subscriptions.append(subscription)
+        save_subscriptions(subscriptions)
+
+    print(
+        f"Subscription saved. Total subscriptions: "
+        f"{len(subscriptions)}"
+    )
+
+    return jsonify({
+        "success": True,
+        "message": "PhiloShield push subscription saved.",
+        "subscriptions": len(subscriptions)
+    })
+def send_push_message(title, body):
+    subscriptions = load_subscriptions()
+
+    if not subscriptions:
+        return 0
+
+    payload = json.dumps({
+        "title": title,
+        "body": body
+    })
+
+    sent = 0
+    valid_subscriptions = []
+
+    for subscription in subscriptions:
+        try:
+            webpush(
+                subscription_info=subscription,
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims=VAPID_CLAIMS,
+                headers={
+                    "X-WNS-Type": "wns/raw"
+                }
+            )
+
+            sent += 1
+            valid_subscriptions.append(subscription)
+
+        except WebPushException as error:
+            print("Push notification error:", error)
+
+            if error.response is not None:
+                if error.response.status_code not in (404, 410):
+                    valid_subscriptions.append(subscription)
+            else:
+                valid_subscriptions.append(subscription)
+
+    save_subscriptions(valid_subscriptions)
+
+    return sent
+
+
+@app.route("/send-notification", methods=["POST"])
+def send_notification():
+    subscriptions = load_subscriptions()
+
+    print(
+        f"Trying to send notification to "
+        f"{len(subscriptions)} subscription(s)."
+    )
+
+    if not subscriptions:
+        return jsonify({
+            "success": False,
+            "message": "No devices are subscribed yet."
+        }), 400
+
+    payload = json.dumps({
+        "title": "PhiloShield Emergency Alert",
+        "body": (
+            "This is a test emergency notification "
+            "from PhiloShield."
+        )
+    })
+
+    sent = 0
+    valid_subscriptions = []
+
+    for subscription in subscriptions:
+        try:
+            webpush(
+                subscription_info=subscription,
+                data=payload,
+                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_claims=VAPID_CLAIMS,
+                headers={
+                    "X-WNS-Type": "wns/raw"
+                }
+            )
+
+            sent += 1
+            valid_subscriptions.append(subscription)
+
+        except WebPushException as error:
+            print("Push notification error:", error)
+
+            if error.response is not None:
+                print(
+                    "Status code:",
+                    error.response.status_code
+                )
+
+                try:
+                    print(
+                        "Response body:",
+                        error.response.text
+                    )
+                except Exception:
+                    pass
+
+                if error.response.status_code not in (404, 410):
+                    valid_subscriptions.append(subscription)
+
+            else:
+                valid_subscriptions.append(subscription)
+
+    save_subscriptions(valid_subscriptions)
+
+    return jsonify({
+        "success": sent > 0,
+        "message": f"Notification sent to {sent} device(s).",
+        "sent": sent,
+        "subscriptions": len(valid_subscriptions)
+    })
+
+def load_alert_history():
+    if not os.path.exists(ALERT_HISTORY_FILE):
+        return []
+
+    try:
+        with open(ALERT_HISTORY_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except (json.JSONDecodeError, OSError):
+        return []
+
+
+def save_alert_history(history):
+    with open(ALERT_HISTORY_FILE, "w", encoding="utf-8") as file:
+        json.dump(history, file, indent=2)
 
 
 @app.route("/")
@@ -13,6 +320,7 @@ def home():
 def shelter():
     return render_template("shelter_map.html")
 
+
 @app.route("/service-worker.js")
 def service_worker():
     return send_from_directory(
@@ -20,6 +328,7 @@ def service_worker():
         "service-worker.js",
         mimetype="application/javascript"
     )
+
 
 @app.route("/alerts")
 def alerts():
@@ -45,30 +354,35 @@ def contacts():
 def weather():
     return render_template("weather.html")
 
+
 @app.route("/sos")
 def sos():
     return render_template("sos.html")
+
 
 @app.route("/firstaid")
 def firstaid():
     return render_template("firstaid.html")
 
+
 @app.route("/flashlight")
 def flashlight():
     return render_template("flashlight.html")
+
 
 @app.route("/medicalid")
 def medicalid():
     return render_template("medicalid.html")
 
+
 @app.route("/share")
 def share():
     return render_template("share.html")
 
+
 @app.route("/offline")
 def offline():
     return render_template("offline.html")
-
 
 
 @app.route("/settings")
@@ -114,15 +428,37 @@ def places():
             "Accept": "application/json"
         }
 
-        response = requests.post(
+        overpass_servers = [
             "https://overpass-api.de/api/interpreter",
-            data={"data": overpass_query},
-            headers=headers,
-            timeout=30
-        )
+            "https://overpass.private.coffee/api/interpreter",
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
+        ]
 
-        response.raise_for_status()
-        map_data = response.json()
+        map_data = None
+        last_error = None
+
+        for server_url in overpass_servers:
+            try:
+                response = requests.post(
+                    server_url,
+                    data={"data": overpass_query},
+                    headers=headers,
+                    timeout=30
+                )
+
+                response.raise_for_status()
+                map_data = response.json()
+                break
+
+            except requests.RequestException as error:
+                print(f"Overpass server failed: {server_url}")
+                print(repr(error))
+                last_error = error
+
+        if map_data is None:
+            raise requests.RequestException(
+                f"All Overpass servers failed: {last_error}"
+            )
 
         nearby_places = []
 
@@ -185,6 +521,7 @@ def places():
             "error": "Nearby emergency resources could not be loaded."
         }), 503
 
+
 @app.route("/api/alerts")
 def emergency_alerts():
     latitude = request.args.get("lat", type=float)
@@ -194,6 +531,8 @@ def emergency_alerts():
         return jsonify({
             "error": "Latitude and longitude are required."
         }), 400
+
+    save_last_location(latitude, longitude)
 
     api_url = (
         "https://api.weather.gov/alerts/active"
@@ -220,10 +559,12 @@ def emergency_alerts():
 
         alerts = []
 
+
         for feature in weather_data.get("features", []):
             properties = feature.get("properties", {})
 
             alerts.append({
+                "id": feature.get("id"),
                 "event": properties.get(
                     "event",
                     "Emergency Alert"
@@ -245,6 +586,26 @@ def emergency_alerts():
                 ) or "Follow instructions from local authorities."
             })
 
+        if alerts:
+            alert_history = load_alert_history()
+            first_alert = alerts[0]
+            alert_id = first_alert.get("id")
+
+            if alert_id and alert_id not in alert_history:
+                send_push_message(
+                    first_alert.get(
+                        "event",
+                        "PhiloShield Emergency Alert"
+                    ),
+                    first_alert.get(
+                        "headline",
+                        "An official emergency alert is active."
+                    )
+                )
+
+                alert_history.append(alert_id)
+                save_alert_history(alert_history)
+
         return jsonify(alerts)
 
     except requests.RequestException as error:
@@ -255,5 +616,19 @@ def emergency_alerts():
             "error": "Official emergency alerts could not be loaded."
         }), 503
 
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    alert_thread = threading.Thread(
+        target=automatic_alert_checker,
+        daemon=True
+    )
+    alert_thread.start()
+
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True,
+        use_reloader=False
+    )
+
+
