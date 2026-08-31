@@ -93,7 +93,7 @@ def automatic_alert_checker():
                     response = requests.get(
                         api_url,
                         headers=headers,
-                        timeout=20
+                        timeout=10
                     )
 
                     response.raise_for_status()
@@ -429,11 +429,10 @@ def places():
         }
 
         overpass_servers = [
-            "https://overpass-api.de/api/interpreter",
-            "https://overpass.private.coffee/api/interpreter",
-            "https://maps.mail.ru/osm/tools/overpass/api/interpreter"
-        ]
-
+        "https://overpass.kumi.systems/api/interpreter",
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.private.coffee/api/interpreter",
+    ]
         map_data = None
         last_error = None
 
