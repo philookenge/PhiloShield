@@ -7,3 +7,8 @@ venv/
 
 private_key.pem
 public_key.pem
+
+alert_history.json
+last_location.json
+places_cache.json
+subscriptions.json
