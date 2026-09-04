@@ -5,6 +5,7 @@ import os
 import threading
 import time
 from pywebpush import webpush, WebPushException
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -31,6 +32,40 @@ LAST_LOCATION_FILE = os.path.join(
     os.path.dirname(__file__),
     "last_location.json"
 )
+
+PLACES_CACHE_FILE = os.path.join(
+    os.path.dirname(__file__),
+    "places_cache.json"
+)
+
+
+PLACES_CACHE = {}
+PLACES_CACHE_DURATION = timedelta(hours=24)
+
+def load_places_cache_file():
+    if not os.path.exists(PLACES_CACHE_FILE):
+        return None
+
+    try:
+        with open(PLACES_CACHE_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def save_places_cache_file(cache_key, nearby_places):
+    try:
+        with open(PLACES_CACHE_FILE, "w", encoding="utf-8") as file:
+            json.dump({
+                "lat": cache_key[0],
+                "lon": cache_key[1],
+                "timestamp": datetime.now().isoformat(),
+                "places": nearby_places
+            }, file, indent=2)
+
+    except OSError as error:
+        print("Could not save places cache:", error)
+
 
 def load_subscriptions():
     if not os.path.exists(SUBSCRIPTIONS_FILE):
@@ -400,6 +435,54 @@ def places():
             "error": "Latitude and longitude are required."
         }), 400
 
+    cache_key = (
+        round(latitude, 2),
+        round(longitude, 2)
+    )
+
+    # Check memory cache first
+    cached = PLACES_CACHE.get(cache_key)
+
+    if (
+        cached
+        and datetime.now() - cached["timestamp"]
+        < PLACES_CACHE_DURATION
+    ):
+        print("Using cached nearby places.")
+        return jsonify(cached["places"])
+
+    # Check saved file cache
+    file_cache = load_places_cache_file()
+
+    if file_cache:
+        try:
+            file_key = (
+                round(float(file_cache["lat"]), 2),
+                round(float(file_cache["lon"]), 2)
+            )
+
+            if file_key == cache_key:
+                file_timestamp = datetime.fromisoformat(
+                    file_cache["timestamp"]
+                )
+
+                cached = {
+                    "timestamp": file_timestamp,
+                    "places": file_cache["places"]
+                }
+
+                PLACES_CACHE[cache_key] = cached
+
+                if (
+                    datetime.now() - file_timestamp
+                    < PLACES_CACHE_DURATION
+                ):
+                    print("Using saved nearby places cache.")
+                    return jsonify(file_cache["places"])
+
+        except (KeyError, ValueError, TypeError):
+            pass
+
     overpass_query = f"""
     [out:json][timeout:25];
     (
@@ -429,10 +512,11 @@ def places():
         }
 
         overpass_servers = [
-        "https://overpass.kumi.systems/api/interpreter",
-        "https://overpass-api.de/api/interpreter",
-        "https://overpass.private.coffee/api/interpreter",
-    ]
+            "https://overpass.kumi.systems/api/interpreter",
+            "https://overpass-api.de/api/interpreter",
+            "https://overpass.private.coffee/api/interpreter"
+        ]
+
         map_data = None
         last_error = None
 
@@ -442,7 +526,7 @@ def places():
                     server_url,
                     data={"data": overpass_query},
                     headers=headers,
-                    timeout=30
+                    timeout=8
                 )
 
                 response.raise_for_status()
@@ -450,7 +534,9 @@ def places():
                 break
 
             except requests.RequestException as error:
-                print(f"Overpass server failed: {server_url}")
+                print(
+                    f"Overpass server failed: {server_url}"
+                )
                 print(repr(error))
                 last_error = error
 
@@ -463,7 +549,11 @@ def places():
 
         for element in map_data.get("elements", []):
             tags = element.get("tags", {})
-            place_type = tags.get("amenity") or tags.get("healthcare")
+
+            place_type = (
+                tags.get("amenity")
+                or tags.get("healthcare")
+            )
 
             if not place_type:
                 continue
@@ -471,12 +561,18 @@ def places():
             place_latitude = element.get("lat")
             place_longitude = element.get("lon")
 
-            if place_latitude is None or place_longitude is None:
+            if (
+                place_latitude is None
+                or place_longitude is None
+            ):
                 center = element.get("center", {})
                 place_latitude = center.get("lat")
                 place_longitude = center.get("lon")
 
-            if place_latitude is None or place_longitude is None:
+            if (
+                place_latitude is None
+                or place_longitude is None
+            ):
                 continue
 
             address_parts = [
@@ -510,15 +606,39 @@ def places():
                 "address": address
             })
 
+        # Save successful result in memory
+        PLACES_CACHE[cache_key] = {
+            "timestamp": datetime.now(),
+            "places": nearby_places
+        }
+
+        # Save successful result in places_cache.json
+        save_places_cache_file(
+            cache_key,
+            nearby_places
+        )
+
         return jsonify(nearby_places)
 
     except requests.RequestException as error:
         print("OVERPASS ERROR DETAILS:")
         print(repr(error))
 
+        # Use older cache if Overpass is unavailable
+        if cached:
+            print(
+                "Overpass failed. "
+                "Using older cached nearby places."
+            )
+            return jsonify(cached["places"])
+
         return jsonify({
-            "error": "Nearby emergency resources could not be loaded."
+            "error": (
+                "Nearby emergency resources "
+                "could not be loaded."
+            )
         }), 503
+
 
 
 @app.route("/api/alerts")

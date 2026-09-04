@@ -124,11 +124,31 @@ async function loadNearbyPlaces(latitude, longitude) {
             "/api/places?lat=" + latitude +
             "&lon=" + longitude;
 
-        const response = await fetch(url);
+        let response = null;
 
-        if (!response.ok) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                response = await fetch(url);
+
+                if (response.ok) {
+                    break;
+                }
+            } catch (error) {
+                console.log(
+                    `Nearby places attempt ${attempt} failed.`,
+                    error
+                );
+            }
+
+            if (attempt < 3) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+        }
+
+        if (!response || !response.ok) {
             throw new Error("Unable to load nearby places.");
         }
+
 
         const places = await response.json();
 
