@@ -12,3 +12,4 @@ alert_history.json
 last_location.json
 places_cache.json
 subscriptions.json
+private_key.pem
