@@ -146,8 +146,19 @@ async function loadNearbyPlaces(latitude, longitude) {
         }
 
         if (!response || !response.ok) {
-            throw new Error("Unable to load nearby places.");
+            console.log("Render failed. Trying direct Overpass fallback.");
+
+            const fallbackPlaces = await loadNearbyPlacesDirectly(
+                latitude,
+                longitude
+            );
+
+            response = {
+                ok: true,
+                json: async () => fallbackPlaces
+            };
         }
+
 
 
         const places = await response.json();
@@ -215,6 +226,43 @@ async function loadNearbyPlaces(latitude, longitude) {
         console.error(error);
         alert("Nearby places could not be loaded.");
     }
+}
+
+
+async function loadNearbyPlacesDirectly(latitude, longitude) {
+    console.log("Trying direct phone fallback...");
+
+    const query = `
+        [out:json][timeout:15];
+        (
+            node["amenity"="hospital"](around:10000,${latitude},${longitude});
+            node["amenity"="fire_station"](around:8000,${latitude},${longitude});
+            node["amenity"="police"](around:8000,${latitude},${longitude});
+        );
+        out;
+    `;
+
+    const url =
+        "https://overpass-api.de/api/interpreter?data=" +
+        encodeURIComponent(query);
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error("Direct nearby places request failed.");
+    }
+
+    const data = await response.json();
+
+    return data.elements.map(element => ({
+        name: element.tags?.name || "Emergency Resource",
+        lat: element.lat,
+        lon: element.lon,
+        type: element.tags?.amenity || "emergency",
+        phone: element.tags?.phone || element.tags?.["contact:phone"] || null,
+        website: element.tags?.website || element.tags?.["contact:website"] || null,
+        address: ""
+    }));
 }
 
 
