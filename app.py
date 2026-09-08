@@ -515,7 +515,6 @@ def places():
             "https://overpass.kumi.systems/api/interpreter",
             "https://overpass-api.de/api/interpreter",
             "https://overpass.private.coffee/api/interpreter"
-            "https://overpass.nchc.org.tw/api/interpreter",
         ]
 
         map_data = None

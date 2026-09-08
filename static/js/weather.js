@@ -1,6 +1,7 @@
 const weatherContainer = document.getElementById("weatherContainer");
 const forecastContainer = document.getElementById("forecastContainer");
-
+const hourlyForecastContainer =
+    document.getElementById("hourlyForecastContainer");
 
 function loadWeather() {
     weatherContainer.innerHTML =
@@ -31,6 +32,7 @@ async function fetchWeather(position) {
         "?latitude=" + latitude +
         "&longitude=" + longitude +
         "&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m" +
+        "&hourly=temperature_2m,weather_code,precipitation_probability" +
         "&daily=weather_code,temperature_2m_max,temperature_2m_min," +
         "precipitation_probability_max,sunrise,sunset" +
         "&temperature_unit=fahrenheit" +
@@ -90,7 +92,7 @@ async function fetchWeather(position) {
             "<p><strong>Health Advice:</strong><br>" +
             airQualityAdvice +
             "</p>";
-
+        displayHourlyForecast(data.hourly);
         displayForecast(data.daily);
 
     } catch (error) {
@@ -158,6 +160,69 @@ function getWeatherCondition(code) {
     }
 
     return "🌤️ Weather Conditions";
+}
+
+function displayHourlyForecast(hourly) {
+    hourlyForecastContainer.innerHTML =
+        "<h2>🕐 48-Hour Forecast</h2>";
+    const now = new Date();
+    let shown = 0;
+    let lastDay = "";
+
+    hourly.time.forEach(function (time, index) {
+        const forecastTime = new Date(time);
+
+        if (forecastTime >= now && shown < 48) {
+            const dayName =
+                forecastTime.toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "short",
+                    day: "numeric"
+                });
+
+            let dayGroup = document.querySelector(
+                '[data-day="' + dayName + '"]'
+            );
+
+
+            if (dayName !== lastDay) {
+                const dayHeading = document.createElement("h3");
+                dayHeading.className = "hourly-day-heading";
+                dayHeading.textContent = dayName;
+                hourlyForecastContainer.appendChild(dayHeading);
+
+                dayGroup = document.createElement("div");
+                dayGroup.className = "hourly-day-group";
+                dayGroup.setAttribute("data-day", dayName);
+                hourlyForecastContainer.appendChild(dayGroup);
+
+                lastDay = dayName;
+            }
+            const hourCard = document.createElement("div");
+            hourCard.className = "hourly-weather-row";
+
+            const readableTime =
+                forecastTime.toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit"
+                });
+
+            const condition =
+                getWeatherCondition(hourly.weather_code[index]);
+
+            hourCard.innerHTML =
+                "<strong>" + readableTime + "</strong>" +
+                " — " +
+                hourly.temperature_2m[index] + " °F" +
+                " — " + condition +
+                " — 🌧️ " +
+                hourly.precipitation_probability[index] + "%";
+
+            dayGroup.appendChild(hourCard);
+
+            shown++;
+        }
+    });
 }
 
 

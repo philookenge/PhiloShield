@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
 </head>
 
 <body>
@@ -32,6 +32,9 @@
             <div id="weatherContainer">
                 <p>Loading weather...</p>
             </div>
+
+            <div id="hourlyForecastContainer"></div>
+
             <div id="forecastContainer"></div>
 
         </section>

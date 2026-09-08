@@ -569,3 +569,28 @@ button:hover {
 .first-aid-details li {
     margin-bottom: 10px;
 }
+
+.hourly-day-heading {
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 25px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #ddd;
+}
+
+.hourly-weather-row {
+    padding: 10px;
+    margin-bottom: 6px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+.hourly-day-group {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 0 15px 0;
+}
