@@ -1,3 +1,9 @@
+// Apply saved Dark Mode to PhiloShield pages
+if (localStorage.getItem("philoDarkMode") === "enabled") {
+    document.body.classList.add("dark-mode");
+}
+
+
 const button = document.getElementById("locationBtn");
 const result = document.getElementById("locationResult");
 

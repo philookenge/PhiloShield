@@ -13,3 +13,4 @@ last_location.json
 places_cache.json
 subscriptions.json
 private_key.pem
+daily_weather_preference.json

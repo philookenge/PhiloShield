@@ -7,7 +7,7 @@
 
     <title>Emergency Kit</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
 </head>
 
 <body>
@@ -18,6 +18,15 @@
         <a href="/alerts">🚨 Alerts</a>
         <a href="/kit">🎒 Emergency Kit</a>
         <a href="/family">👨‍👩‍👧 Family Plan</a>
+        <a href="/contacts">☎️ Contacts</a>
+        <a href="/share-app">📤 Share PhiloShield</a>
+        <a href="/weather">🌧️ Weather</a>
+        <a href="/sos">🆘 SOS</a>
+        <a href="/firstaid">🩹 First Aid</a>
+        <a href="/flashlight">🔦 Flashlight</a>
+        <a href="/medicalid">🪪 Medical ID</a>
+        <a href="/share">📍 Share Location</a>
+        <a href="/assistant">🤖 AI Assistant</a>
     </nav>
 
     <div class="container">
@@ -83,6 +92,22 @@
 
     </div>
     <script src="{{ url_for('static', filename='js/kit.js') }}"></script>
+
+    <a href="{{ url_for('assistant') }}" class="ai-floating-button">
+        <span class="ai-floating-icon">🤖</span>
+
+        <span class="ai-floating-text">
+            <strong>Hi!</strong>
+            <span>I can assist you</span>
+        </span>
+    </a>
+
+    <script>
+        if (localStorage.getItem("philoDarkMode") === "enabled") {
+            document.body.classList.add("dark-mode");
+        }
+    </script>
+
 </body>
 
 </html>

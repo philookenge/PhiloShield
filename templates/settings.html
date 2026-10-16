@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PhiloShield Settings</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="/">🏠 Home</a>
+        <a href="/shelter">🏥 Safe Places</a>
+        <a href="/alerts">🚨 Alerts</a>
+        <a href="/kit">🎒 Kit</a>
+        <a href="/family">👨‍👩‍👧 Family</a>
+        <a href="/contacts">☎️ Contacts</a>
+        <a href="/weather">🌤️ Weather</a>
+        <a href="/sos">🆘 SOS</a>
+        <a href="/firstaid">🩸 First Aid</a>
+        <a href="/flashlight">🔦 Flashlight</a>
+        <a href="/medicalid">🪪 Medical ID</a>
+        <a href="/share">📍 Share Location</a>
+        <a href="/share-app">📤 Share PhiloShield</a>
+        <a href="/assistant">🤖 AI Assistant</a>
+        <a href="/settings">⚙️ Settings</a>
+    </nav>
+
+    <div class="container">
+
+        <div class="page-header">
+            <h1>⚙️ Settings</h1>
+            <p>Manage your PhiloShield preferences.</p>
+        </div>
+
+        <h3>PhiloShield Settings</h3>
+
+        <p>
+            More settings will be available here as PhiloShield grows.
+        </p>
+
+        <div class="settings-option">
+            <div>
+                <h3>🔔 Emergency Notifications</h3>
+                <p>Allow PhiloShield to send emergency alerts to this device.</p>
+            </div>
+
+            <button id="notificationSettingsButton">
+                Enable Notifications
+            </button>
+        </div>
+
+        <div class="settings-option">
+            <div>
+                <h3>🌤️ Daily Weather Notifications</h3>
+                <p>
+                    Receive a daily weather forecast and safety advice
+                    every morning at 7:00 AM.
+                </p>
+            </div>
+
+            <label>
+                <input type="checkbox" id="dailyWeatherToggle" {% if daily_weather_enabled %}checked{% endif %}>
+                Enable Daily Weather Updates
+            </label>
+        </div>
+
+
+
+        <div class="settings-option">
+            <div>
+                <h3>📍 Location Access</h3>
+                <p>Allow PhiloShield to use your location for nearby safety information.</p>
+            </div>
+
+            <button id="locationSettingsButton">
+                Check Location
+            </button>
+        </div>
+
+        <div class="settings-option">
+            <div>
+                <h3>🌙 Dark Mode</h3>
+                <p>Use a darker appearance for PhiloShield.</p>
+            </div>
+
+            <button id="darkModeButton">
+                Enable Dark Mode
+            </button>
+        </div>
+
+
+
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/settings.js') }}?v=1"></script>
+
+</body>
+
+</html>

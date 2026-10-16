@@ -1,3 +1,5 @@
+from email.mime import message
+
 from flask import Flask, render_template, jsonify, request, send_from_directory
 import requests
 import json
@@ -6,8 +8,12 @@ import threading
 import time
 from pywebpush import webpush, WebPushException
 from datetime import datetime, timedelta
+from openai import OpenAI
+from safety_knowledge import find_safety_answer
 
 app = Flask(__name__)
+
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 VAPID_PRIVATE_KEY = os.path.join(
     os.path.dirname(__file__),
@@ -31,6 +37,11 @@ ALERT_HISTORY_FILE = os.path.join(
 LAST_LOCATION_FILE = os.path.join(
     os.path.dirname(__file__),
     "last_location.json"
+)
+
+DAILY_WEATHER_PREFERENCE_FILE = os.path.join(
+    os.path.dirname(__file__),
+    "daily_weather_preference.json"
 )
 
 PLACES_CACHE_FILE = os.path.join(
@@ -91,7 +102,20 @@ def save_last_location(latitude, longitude):
     with open(LAST_LOCATION_FILE, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=2)
 
+def save_daily_weather_preference(enabled):
+    with open(DAILY_WEATHER_PREFERENCE_FILE, "w", encoding="utf-8") as file:
+        json.dump({"enabled": enabled}, file, indent=2)
 
+def load_daily_weather_preference():
+    if not os.path.exists(DAILY_WEATHER_PREFERENCE_FILE):
+        return True 
+    try:
+        with open(DAILY_WEATHER_PREFERENCE_FILE, "r", encoding="utf-8") as file:
+            data = json.load(file)
+            return data.get("enabled", True)
+    except (json.JSONDecodeError, OSError):
+        return True
+    
 def load_last_location():
     if not os.path.exists(LAST_LOCATION_FILE):
         return None
@@ -179,6 +203,48 @@ def automatic_alert_checker():
 
         time.sleep(300)
 
+last_weather_check_notification_date = None       
+
+def daily_weather_checker():
+    global last_weather_check_notification_date
+    while True:
+        try:
+            now = datetime.now()
+
+            if now.hour == 7 and now.minute == 0 and last_weather_check_notification_date != now.date():
+
+                                                  if not load_daily_weather_preference():
+                                                        time.sleep(60)
+                                                        continue
+
+                                                  location = load_last_location()
+                                                  if location:
+                                                      latitude = location.get("lat")
+                                                      longitude = location.get("lon")
+
+                                                      if latitude is not None and longitude is not None:
+                                                          weather_description = get_current_weather(latitude, longitude)
+
+                                                          if weather_description:
+                                                              safety_advice = get_weather_safety_advice(weather_description)
+                                                              send_daily_weather_notification(weather_description, safety_advice)
+                                                              send_daily_weather_notification(weather_description, safety_advice)
+                                                              last_weather_check_notification_date = now.date()
+        except Exception as error:
+            print("Daily weather checker error:", error)
+
+        time.sleep(60)
+
+@app.route("/api/weather-preference", methods=["POST"])
+def weather_preference():
+    data = request.get_json()
+    enabled = data.get("enabled", True)
+    save_daily_weather_preference(enabled)
+
+    return jsonify({
+        "success": True,
+        "enabled": enabled
+    })
 
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
@@ -255,6 +321,40 @@ def send_push_message(title, body):
     save_subscriptions(valid_subscriptions)
 
     return sent
+
+def send_daily_weather_notification(weather_description, safety_advice):
+    title = "🌤️ PhiloShield Daily Weather"
+
+    body = (
+        f"Today's weather: {weather_description}\n"
+        f"🛡️ Safety Tip: {safety_advice}"
+    )
+
+    return send_push_message(title, body)
+
+def get_weather_safety_advice(weather_description):
+    weather = weather_description.lower()
+
+    if "thunder" in weather or "storm" in weather:
+        return "Stay indoors and away from windows during thunderstorms."
+
+    if "snow" in weather or "ice" in weather:
+        return "Dress warmly and be careful on slippery roads and sidewalks."
+
+    if "rain" in weather:
+        return "Carry an umbrella and use extra caution while driving."
+
+    if "hot" in weather or "heat" in weather:
+        return "Drink plenty of water and avoid staying in direct sun too long."
+
+    if "cold" in weather or "freezing" in weather:
+        return "Wear warm layers and limit time outdoors."
+
+    if "fog" in weather:
+        return "Drive slowly and use low-beam headlights."
+
+    return "Check conditions before going out and stay prepared."
+
 
 
 @app.route("/send-notification", methods=["POST"])
@@ -345,6 +445,421 @@ def save_alert_history(history):
     with open(ALERT_HISTORY_FILE, "w", encoding="utf-8") as file:
         json.dump(history, file, indent=2)
 
+def get_current_weather(latitude, longitude):
+    if latitude is None or longitude is None:
+        return None
+
+    url = "https://api.open-meteo.com/v1/forecast"
+
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "current": "temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m",
+        "temperature_unit": "fahrenheit",
+        "wind_speed_unit": "mph",
+        "timezone": "auto"
+    }
+
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+
+        data = response.json()
+        current = data.get("current", {})
+
+        temperature = current.get("temperature_2m")
+        humidity = current.get("relative_humidity_2m")
+        wind = current.get("wind_speed_10m")
+        code = current.get("weather_code")
+
+        conditions = {
+            0: "Clear sky",
+            1: "Mainly clear",
+            2: "Partly cloudy",
+            3: "Cloudy",
+            45: "Foggy",
+            48: "Foggy",
+            51: "Light drizzle",
+            53: "Drizzle",
+            55: "Heavy drizzle",
+            61: "Light rain",
+            63: "Rain",
+            65: "Heavy rain",
+            71: "Light snow",
+            73: "Snow",
+            75: "Heavy snow",
+            80: "Rain showers",
+            81: "Rain showers",
+            82: "Heavy rain showers",
+            95: "Thunderstorm",
+            96: "Thunderstorm with hail",
+            99: "Thunderstorm with hail"
+        }
+
+        condition = conditions.get(code, "Current conditions")
+
+        safety_advice = get_weather_safety_advice(condition)
+
+        return (
+            f"🌤️ CURRENT WEATHER\n"
+            f"• Condition: {condition}\n"
+            f"• Temperature: {temperature}°F\n"
+            f"• Humidity: {humidity}%\n"
+            f"• Wind: {wind} mph\n"
+            f"🛡️ Safety Tip: {safety_advice}"
+
+        )
+
+    except requests.RequestException:
+        return None
+
+
+@app.route("/api/assistant", methods=["POST"])
+def api_assistant():
+    data = request.get_json()
+    message = data.get("message", "")
+    latitude = data.get("latitude")
+    longitude = data.get("longitude")
+
+    from datetime import datetime
+
+    time_words = [
+        "what time is it",
+        "current time",
+        "time now"
+    ]
+
+    date_words = [
+        "what date is it",
+        "what day is today",
+        "what day is it",
+        "today's date",
+        "current date"
+    ]
+
+    message_lower = message.lower()
+
+    if any(word in message_lower for word in time_words):
+        now = datetime.now()
+        return jsonify({
+            "reply": f"🕐 The current time is {now.strftime('%I:%M %p')}."
+        })
+
+    if any(word in message_lower for word in date_words):
+        now = datetime.now()
+        return jsonify({
+            "reply": f"📅 Today is {now.strftime('%A, %B %d, %Y')}."
+        })
+    
+    # Nearby emergency places
+    nearby_words = [
+    "hospital",
+    "medical center",
+    "emergency room",
+    "er near",
+    "police",
+    "police station",
+    "police department",
+    "cop",
+    "cops",
+    "officer",
+    "law enforcement",
+    "sheriff",
+    "fire station",
+    "fire department",
+    "firefighter"
+]
+
+    if any(word in message_lower for word in nearby_words):
+        if latitude is None or longitude is None:
+            return jsonify({
+                "reply": "📍 I need your location to find nearby emergency places. Please allow location access."
+            })
+
+
+                # Use the nearby places already saved by the Safe Places map
+        try:
+            cache_data = load_places_cache_file()
+
+            if not cache_data:
+                return jsonify({
+                    "reply": (
+                        "📍 I don't have nearby emergency places saved yet. "
+                        "Please open Nearby Safe Places once, then try again."
+                    )
+                })
+
+            nearby_places = cache_data.get("places", [])
+
+            if not nearby_places:
+                return jsonify({
+                    "reply": "📍 I couldn't find any saved emergency places nearby."
+                })
+
+            # Determine what type of place the user requested
+            if "hospital" in message_lower:
+                wanted_type = "hospital"
+            elif any(word in message_lower for word in ["police", "cop", "sheriff"]):
+                wanted_type = "police"
+            elif "fire" in message_lower:
+                wanted_type = "fire_station"
+            else:
+                wanted_type = None
+
+            matching_places = [
+                place for place in nearby_places
+                if wanted_type is None
+                or place.get("type") == wanted_type
+            ]
+
+            if not matching_places:
+                return jsonify({
+                    "reply": "📍 I couldn't find that type of emergency place nearby."
+                })
+
+         # Calculate distance from the user's current location
+            for place in matching_places:
+                place_lat = place.get("lat")
+                place_lon = place.get("lon")
+
+                if place_lat is not None and place_lon is not None:
+                    place["distance"] = haversine_distance(
+                        latitude,
+                        longitude,
+                        place_lat,
+                        place_lon
+                    )
+                else:
+                    place["distance"] = float("inf")
+
+                        # Sort places from closest to farthest
+            sorted_places = sorted(
+                matching_places,
+                key=lambda place: place["distance"]
+            )
+
+            # Keep the closest place for normal "nearest" questions
+            nearest = sorted_places[0]
+
+            # Keep up to 3 places for "3 nearest" questions
+            three_nearest = sorted_places[:3]
+
+            # Check if the user is asking for the 3 nearest places
+            wants_three = any(phrase in message_lower for phrase in [
+                "3 nearest",
+                "three nearest",
+                "3 closest",
+                "three closest"
+])
+
+            if wants_three:
+                results = []
+
+                for index, place in enumerate(three_nearest, start=1):
+                    place_name = place.get("name", "Emergency location")
+                    place_distance = place.get("distance", "unknown")
+                    place_address = place.get("address", "")
+                    place_lat = place.get("lat")
+                    place_lon = place.get("lon")
+
+                    item = {
+                        "number": index,
+                        "name": place_name,
+                        "distance": place_distance,
+                        "address": place_address
+                    }
+
+                    if place_lat is not None and place_lon is not None:
+                        item["directions_url"] = (
+                            "https://www.google.com/maps/dir/?api=1"
+                            f"&destination={place_lat},{place_lon}"
+                        )
+
+                    results.append(item)
+
+                return jsonify({
+                    "reply": "Here are the 3 nearest emergency places:",
+                    "places": results
+                })
+
+        
+            name = nearest.get(
+                "name",
+                "Emergency location"
+            )
+
+            distance = nearest.get("distance")
+            address = nearest.get("address", "")
+
+            place_lat = nearest.get("lat")
+            place_lon = nearest.get("lon")
+
+            reply = (
+                f"📍 The nearest is {name}, "
+                f"about {distance} miles away."
+            )
+
+            if address:
+                reply += f" Address: {address}."
+
+            if place_lat is not None and place_lon is not None:
+             directions_url = (
+                f"https://www.google.com/maps/dir/?api=1"
+                f"&destination={place_lat},{place_lon}"
+            )
+
+           
+
+            return jsonify({
+    "reply": reply,
+    "directions_url": directions_url if place_lat is not None and place_lon is not None else None
+})
+
+
+        except Exception as error:
+            print(
+                "NEARBY ASSISTANT ERROR:",
+                repr(error)
+            )
+
+            return jsonify({
+                "reply": (
+                    "📍 I couldn't read the saved nearby "
+                    "emergency places."
+                )
+            })
+
+
+        
+    # Check PhiloShield's free built-in safety knowledge first
+    safety_answer = find_safety_answer(message)
+
+    if safety_answer:
+        return jsonify({"reply": safety_answer})
+
+    # Current date and day
+    date_words = [
+        "what date is it",
+        "what is the date",
+        "what's the date",
+        "today's date",
+        "what day is it",
+        "what day is today",
+        "what is today",
+        "date today"
+    ]
+
+    if any(word in message.lower() for word in date_words):
+        now = datetime.now()
+        current_date = now.strftime("%A, %B %d, %Y")
+
+        return jsonify({
+            "reply": f"📅 Today is {current_date}."
+        })
+
+    # Emergency phone numbers - United States
+    emergency_number_words = [
+        "emergency number",
+        "emergency phone number",
+        "who do i call in an emergency",
+        "who should i call in an emergency",
+        "someone is in danger",
+        "call police",
+        "call an ambulance",
+        "call firefighters",
+        "poison control",
+        "poison number",
+        "what number should i call in an emergency",
+        "what number do i call in an emergency",
+        "what number to call in an emergency",
+        "what should i call in an emergency"
+    ]
+
+    if any(
+        word in message.lower()
+        for word in emergency_number_words
+    ):
+        if "poison" in message.lower():
+            return jsonify({
+                "reply": (
+                    "☠️ U.S. Poison Control: 1-800-222-1222. "
+                    "If the person is unconscious, having trouble "
+                    "breathing, having a seizure, or is in immediate "
+                    "danger, call 911."
+                )
+            })
+
+        return jsonify({
+            "reply": (
+                "🚨 In the United States, call 911 for an immediate "
+                "police, fire, or medical emergency. "
+                "If you are outside the United States, use your "
+                "country's local emergency number."
+            )
+        })
+
+    # Current weather
+    weather_words = [
+        "weather",
+        "temperature",
+        "temperature outside",
+        "weather now",
+        "how hot",
+        "how cold"
+    ]
+
+    if any(word in message.lower() for word in weather_words):
+        if latitude is None or longitude is None:
+            return jsonify({
+                "reply": (
+                    "📍 I need your location to check the current "
+                    "weather. Please allow location access."
+                )
+            })
+
+        weather_answer = get_current_weather(
+            latitude,
+            longitude
+        )
+
+        if weather_answer:
+            return jsonify({"reply": weather_answer})
+
+        return jsonify({
+            "reply": (
+                "I couldn't load the current weather right now. "
+                "Please try again."
+            )
+        })
+
+    # OpenAI fallback
+    response = client.responses.create(
+        model="gpt-5.6-luna",
+        instructions="""
+You are PhiloShield AI Assistant.
+
+Help users with emergency preparedness, weather safety,
+first aid basics, emergency kits, evacuation, shelters,
+and general safety questions.
+
+If someone is in immediate danger, tell them to call
+local emergency services immediately.
+
+Do not claim that you can call police, firefighters,
+ambulance, or emergency services for the user.
+
+For serious medical emergencies, encourage professional
+medical help and emergency services.
+
+Keep answers clear, calm, simple, and practical.
+""",
+        input=message
+    )
+
+    return jsonify({
+        "reply": response.output_text
+    })
+
 
 @app.route("/")
 def home():
@@ -390,6 +905,36 @@ def weather():
     return render_template("weather.html")
 
 
+@app.route("/assistant")
+def assistant():
+    return render_template("assistant.html")
+
+
+@app.route("/settings")
+def settings():
+    daily_weather_enabled = load_daily_weather_preference()
+    return render_template(
+        "settings.html",
+        daily_weather_enabled=daily_weather_enabled
+    )
+
+@app.route("/api/daily-weather-preference", methods=["POST"])
+def update_daily_weather_preference():
+    data = request.get_json(silent=True) or {}
+
+    enabled = data.get("enabled")
+
+    if not isinstance(enabled, bool):
+        return jsonify({"error": "Invalid preference"}), 400
+
+    save_daily_weather_preference(enabled)
+
+    return jsonify({
+        "success": True,
+        "enabled": enabled
+    })
+
+
 @app.route("/sos")
 def sos():
     return render_template("sos.html")
@@ -415,14 +960,40 @@ def share():
     return render_template("share.html")
 
 
+@app.route("/share-app")
+def share_app():
+    return render_template("share_app.html")
+
+
 @app.route("/offline")
 def offline():
     return render_template("offline.html")
 
 
-@app.route("/settings")
-def settings():
-    return render_template("settings.html")
+def haversine_distance(lat1, lon1, lat2, lon2):
+    from math import radians, sin, cos, sqrt, atan2
+
+    earth_radius = 3958.8
+
+    lat1 = radians(float(lat1))
+    lon1 = radians(float(lon1))
+    lat2 = radians(float(lat2))
+    lon2 = radians(float(lon2))
+
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = (
+        sin(dlat / 2) ** 2
+        + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+    )
+
+    c = 2 * atan2(
+        sqrt(a),
+        sqrt(1 - a)
+    )
+
+    return round(earth_radius * c, 2)
 
 
 @app.route("/api/places")
@@ -440,7 +1011,6 @@ def places():
         round(longitude, 2)
     )
 
-    # Check memory cache first
     cached = PLACES_CACHE.get(cache_key)
 
     if (
@@ -451,7 +1021,6 @@ def places():
         print("Using cached nearby places.")
         return jsonify(cached["places"])
 
-    # Check saved file cache
     file_cache = load_places_cache_file()
 
     if file_cache:
@@ -594,6 +1163,12 @@ def places():
                 ),
                 "lat": place_latitude,
                 "lon": place_longitude,
+                "distance": haversine_distance(
+                    latitude,
+                    longitude,
+                    place_latitude,
+                    place_longitude
+                ),
                 "type": place_type,
                 "phone": (
                     tags.get("phone")
@@ -606,13 +1181,11 @@ def places():
                 "address": address
             })
 
-        # Save successful result in memory
         PLACES_CACHE[cache_key] = {
             "timestamp": datetime.now(),
             "places": nearby_places
         }
 
-        # Save successful result in places_cache.json
         save_places_cache_file(
             cache_key,
             nearby_places
@@ -624,7 +1197,6 @@ def places():
         print("OVERPASS ERROR DETAILS:")
         print(repr(error))
 
-        # Use older cache if Overpass is unavailable
         if cached:
             print(
                 "Overpass failed. "
@@ -638,7 +1210,6 @@ def places():
                 "could not be loaded."
             )
         }), 503
-
 
 
 @app.route("/api/alerts")
@@ -678,7 +1249,6 @@ def emergency_alerts():
 
         alerts = []
 
-
         for feature in weather_data.get("features", []):
             properties = feature.get("properties", {})
 
@@ -700,9 +1270,10 @@ def emergency_alerts():
                     "headline",
                     "No headline available."
                 ),
-                "instruction": properties.get(
-                    "instruction"
-                ) or "Follow instructions from local authorities."
+                "instruction": (
+                    properties.get("instruction")
+                    or "Follow instructions from local authorities."
+                )
             })
 
         if alerts:
@@ -732,7 +1303,10 @@ def emergency_alerts():
         print(repr(error))
 
         return jsonify({
-            "error": "Official emergency alerts could not be loaded."
+            "error": (
+                "Official emergency alerts "
+                "could not be loaded."
+            )
         }), 503
 
 
@@ -743,11 +1317,15 @@ if __name__ == "__main__":
     )
     alert_thread.start()
 
+    weather_thread = threading.Thread(
+        target=daily_weather_checker,
+        daemon=True
+    )
+    weather_thread.start()
+
     app.run(
         host="0.0.0.0",
         port=5000,
         debug=True,
         use_reloader=False
     )
-
-

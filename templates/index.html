@@ -10,7 +10,7 @@
 
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
 
     <title>PhiloShield</title>
 </head>
@@ -23,6 +23,16 @@
         <a href="/kit">🎒 Emergency Kit</a>
         <a href="/family">👨‍👩‍👧 Family Plan</a>
         <a href="/contacts">☎️ Contacts</a>
+        <a href="/share-app">📤 Share PhiloShield</a>
+        <a href="/weather">🌧️ Weather</a>
+        <a href="/sos">🆘 SOS</a>
+        <a href="/firstaid">🩹 First Aid</a>
+        <a href="/flashlight">🔦 Flashlight</a>
+        <a href="/medicalid">🪪 Medical ID</a>
+        <a href="/share">📍 Share Location</a>
+        <a href="/assistant">🤖 AI Assistant</a>
+        <a href="/settings">⚙️ Settings</a>
+
     </nav>
 
     <header class="app-header">
@@ -70,6 +80,12 @@
             <h2 class="section-title">Quick Actions</h2>
 
             <div class="action-grid">
+
+                <a href="{{ url_for('assistant') }}" class="action-card">
+                    <span class="action-icon">🤖</span>
+                    <h3>PhiloShield AI</h3>
+                    <p>Ask AI for emergency safety guidance.</p>
+                </a>
 
                 <a href="/shelter" class="action-card">
                     <span class="action-icon">🗺️</span>
@@ -141,6 +157,24 @@
                     <h3>Medical ID</h3>
 
                     <p>View important emergency medical information.</p>
+                </a>
+
+                <a href="/share" class="action-card">
+                    <span class="action-icon">📤</span>
+                    <h3>Share My Location</h3>
+                    <p>Share My location with family and friends.</p>
+                </a>
+
+                <a href="{{ url_for('share_app') }}" class="action-card">
+                    <span class="action-icon">📤</span>
+                    <h3>Share PhiloShield</h3>
+                    <p>Share PhiloShield with family and friends.</p>
+                </a>
+
+                <a href="/settings" class="action-card">
+                    <span class="action-icon">⚙️</span>
+                    <h3>Settings</h3>
+                    <p>Manage your PhiloShield preferences.</p>
                 </a>
 
 
@@ -255,7 +289,22 @@
         }
     </script>
 
+    <a href="{{ url_for('assistant') }}" class="ai-floating-button">
+        <span class="ai-floating-icon">🤖</span>
 
+        <span class="ai-floating-text">
+            <strong>Hi!</strong>
+            <span>I can assist you</span>
+        </span>
+    </a>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}?v=2"></script>
+
+    <script>
+        if (localStorage.getItem("philoDarkMode") === "enabled") {
+            document.body.classList.add("dark-mode");
+        }
+    </script>
 
 </body>
 
