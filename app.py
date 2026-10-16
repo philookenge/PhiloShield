@@ -13,7 +13,7 @@ from safety_knowledge import find_safety_answer
 
 app = Flask(__name__)
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"]) if os.environ.get("OPENAI_API_KEY") else None
 
 VAPID_PRIVATE_KEY = os.path.join(
     os.path.dirname(__file__),
@@ -832,32 +832,14 @@ def api_assistant():
             )
         })
 
-    # OpenAI fallback
-    response = client.responses.create(
-        model="gpt-5.6-luna",
-        instructions="""
-You are PhiloShield AI Assistant.
-
-Help users with emergency preparedness, weather safety,
-first aid basics, emergency kits, evacuation, shelters,
-and general safety questions.
-
-If someone is in immediate danger, tell them to call
-local emergency services immediately.
-
-Do not claim that you can call police, firefighters,
-ambulance, or emergency services for the user.
-
-For serious medical emergencies, encourage professional
-medical help and emergency services.
-
-Keep answers clear, calm, simple, and practical.
-""",
-        input=message
-    )
-
+    # Free PhiloShield assistant fallback
     return jsonify({
-        "reply": response.output_text
+        "reply": (
+            "I don't have a specific answer to that question yet. "
+            "I can help with emergency preparedness, weather safety, "
+            "first aid basics, evacuation, shelters, and emergency kits. "
+            "Please try asking about one of these topics."
+        )
     })
 
 
