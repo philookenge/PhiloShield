@@ -47,10 +47,10 @@ sendButton.addEventListener("click", async function () {
         return;
     }
 
-    const userText = document.createElement("p");
-    userText.textContent = "You: " + message;
+    const userText = document.createElement("div");
+    userText.className = "user-message";
+    userText.textContent = message;
     chatContainer.appendChild(userText);
-
     userMessage.value = "";
 
     const location = await getUserLocation();
@@ -69,8 +69,9 @@ sendButton.addEventListener("click", async function () {
 
     const data = await response.json();
 
-    const aiText = document.createElement("p");
-    aiText.textContent = "PhiloShield AI: " + data.reply;
+    const aiText = document.createElement("div");
+    aiText.className = "ai-message";
+    aiText.textContent = "🤖 PhiloShield AI\n\n" + data.reply;
     chatContainer.appendChild(aiText);
 
     // If PhiloShield returns multiple nearby places

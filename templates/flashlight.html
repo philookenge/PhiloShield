@@ -1,6 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 
+<style>
+    .mobile-menu-button {
+        display: none;
+    }
+
+    @media (max-width: 768px) {
+        .mobile-menu-button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: #397fba;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #mobileNavigation {
+            display: none;
+        }
+
+        #mobileNavigation.menu-open {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+</style>
+
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +42,13 @@
 
 <body>
 
-    <nav class="navbar">
+    <button type="button" id="mobileMenuButton" class="mobile-menu-button" aria-label="Open navigation menu"
+        aria-expanded="false" aria-controls="mobileNavigation">
+        ☰ Menu
+    </button>
+
+
+    <nav class="navbar" id="mobileNavigation">
         <a href="/">🏠 Home</a>
         <a href="/shelter">🗺️ Nearby Safe Places</a>
         <a href="/alerts">🚨 Alerts</a>
@@ -77,6 +114,28 @@
             document.body.classList.add("dark-mode");
         }
     </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const menuButton = document.getElementById("mobileMenuButton");
+            const mobileNavigation = document.getElementById("mobileNavigation");
+
+            if (!menuButton || !mobileNavigation) return;
+
+            menuButton.addEventListener("click", function () {
+                const isOpen = mobileNavigation.classList.toggle("menu-open");
+
+                menuButton.setAttribute("aria-expanded", String(isOpen));
+                menuButton.setAttribute(
+                    "aria-label",
+                    isOpen ? "Close navigation menu" : "Open navigation menu"
+                );
+
+                menuButton.textContent = isOpen ? "✕ Close Menu" : "☰ Menu";
+            });
+        });
+    </script>
+
 
 </body>
 

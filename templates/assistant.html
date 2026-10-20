@@ -7,11 +7,150 @@
     <title>PhiloShield AI Assistant</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+    <style>
+        /* PhiloShield AI chat area */
+        .philo-chat {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+            margin: 20px 0;
+            background: #f1f5f9;
+            border-radius: 16px;
+            min-height: 120px;
+            overflow-wrap: anywhere;
+        }
+
+        /* Assistant messages */
+        .philo-chat .ai-message {
+            align-self: flex-start;
+            background: white;
+            color: #1e293b;
+            padding: 12px 16px;
+            border-radius: 16px 16px 16px 4px;
+            max-width: 90%;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        /* User messages */
+        .philo-chat .user-message {
+            align-self: flex-end;
+            background: #0877d1;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 16px 16px 4px 16px;
+            max-width: 85%;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        /* Dark mode */
+        .dark-mode .philo-chat {
+            background: #172235;
+        }
+
+        .dark-mode .philo-chat .ai-message {
+            background: #263449;
+            color: white;
+        }
+
+        /* PhiloShield chat input area */
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            min-width: 0;
+            padding: 14px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+        }
+
+        .chat-input-area button {
+            padding: 14px 22px;
+            font-size: 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .chat-input-area button:hover {
+            background: #0056b3;
+        }
+
+        /* Mobile-friendly chat input */
+        @media (max-width: 600px) {
+            .chat-input-area {
+                gap: 8px;
+            }
+
+            .chat-input-area input {
+                width: 100%;
+                min-width: 0;
+                font-size: 16px;
+                padding: 12px;
+            }
+
+            .chat-input-area button {
+                flex-shrink: 0;
+                padding: 12px 16px;
+                font-size: 16px;
+            }
+        }
+
+        /* Hide hamburger button on computers */
+        .mobile-menu-button {
+            display: none;
+        }
+
+        /* Mobile navigation */
+        @media (max-width: 768px) {
+
+            .mobile-menu-button {
+                display: block;
+                width: 100%;
+                padding: 14px;
+                background: #064b85;
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-size: 18px;
+                font-weight: bold;
+                cursor: pointer;
+                margin-bottom: 12px;
+            }
+
+            #mobileNavigation {
+                display: none;
+            }
+
+            #mobileNavigation.menu-open {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+
 </head>
 
 <body>
 
-    <nav class="navbar">
+    <button type="button" id="mobileMenuButton" class="mobile-menu-button" aria-label="Open navigation menu"
+        aria-expanded="false" aria-controls="mobileNavigation">
+        ☰ Menu
+    </button>
+
+    <nav class="navbar" id="mobileNavigation">
         <a href="/">🏠 Home</a>
         <a href="/shelter">🗺️ Nearby Safe Places</a>
         <a href="/alerts">🚨 Alerts</a>
@@ -35,11 +174,13 @@
             <p>Ask questions about emergency safety and preparedness.</p>
         </div>
 
-        <div id="chatContainer">
-            <p><strong>PhiloShield AI:</strong> Hello! How can I help you today?</p>
+        <div id="chatContainer" class="philo-chat">
+            <p class="ai-message"><strong>🤖 PhiloShield AI:</strong> Hello! I'm your safety assistant. Ask me about
+                emergencies, weather, or how to stay safe.</p>
+
         </div>
 
-        <div>
+        <div class="chat-input-area">
             <input type="text" id="userMessage" placeholder="Ask a safety question...">
 
             <button id="sendButton">
@@ -56,6 +197,37 @@
             document.body.classList.add("dark-mode");
         }
     </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const menuButton = document.getElementById("mobileMenuButton");
+            const mobileNavigation = document.getElementById("mobileNavigation");
+
+            if (!menuButton || !mobileNavigation) return;
+
+            menuButton.addEventListener("click", function () {
+                const isOpen = mobileNavigation.classList.toggle("menu-open");
+
+                menuButton.setAttribute("aria-expanded", String(isOpen));
+                menuButton.setAttribute(
+                    "aria-label",
+                    isOpen ? "Close navigation menu" : "Open navigation menu"
+                );
+
+                menuButton.textContent = isOpen ? "✕ Close Menu" : "☰ Menu";
+            });
+            mobileNavigation.querySelectorAll("a").forEach(function (link) {
+                link.addEventListener("click", function () {
+                    mobileNavigation.classList.remove("menu-open");
+
+                    menuButton.setAttribute("aria-expanded", "false");
+                    menuButton.setAttribute("aria-label", "Open navigation menu");
+                    menuButton.textContent = "☰ Menu";
+                });
+            });
+        });
+    </script>
+
 
 </body>
 
