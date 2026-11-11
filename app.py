@@ -74,7 +74,7 @@ def save_places_cache_file(cache_key, nearby_places):
                 "places": nearby_places
             }, file, indent=2)
 
-    except OSError as error:
+    except (OSError, TypeError, ValueError) as error:
         print("Could not save places cache:", error)
 
 
@@ -1077,7 +1077,7 @@ def places():
                     server_url,
                     data={"data": overpass_query},
                     headers=headers,
-                    timeout=8
+                    timeout=10
                 )
 
                 response.raise_for_status()
@@ -1179,6 +1179,9 @@ def places():
         print("OVERPASS ERROR DETAILS:")
         print(repr(error))
 
+        if not cached:
+            cached = load_places_cache_file()
+
         if cached:
             print(
                 "Overpass failed. "
@@ -1187,10 +1190,7 @@ def places():
             return jsonify(cached["places"])
 
         return jsonify({
-            "error": (
-                "Nearby emergency resources "
-                "could not be loaded."
-            )
+            "error": "Nearby emergency resources could not be loaded."
         }), 503
 
 
