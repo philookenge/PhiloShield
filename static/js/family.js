@@ -21,7 +21,8 @@ saveButton.addEventListener("click", function () {
 
     const newMember = {
         name: memberName,
-        phone: memberPhone
+        phone: memberPhone,
+        meetingPlace: meetingPlace
     };
 
     familyMembers.push(newMember);
@@ -35,6 +36,7 @@ saveButton.addEventListener("click", function () {
 
     document.getElementById("memberName").value = "";
     document.getElementById("memberPhone").value = "";
+    document.getElementById("meetingPlace").value = "";
 
     displayFamilyMembers();
 
@@ -51,6 +53,7 @@ function displayFamilyMembers() {
         memberCard.innerHTML =
             "<p><strong>Name:</strong> " + member.name + "</p>" +
             "<p><strong>Phone:</strong> " + member.phone + "</p>" +
+            "<p><strong>Meeting Place:</strong> " + (member.meetingPlace || "Not set") + "</p>" +
             "<button onclick='deleteFamilyMember(" + index + ")'>" +
             "Delete</button>";
 
