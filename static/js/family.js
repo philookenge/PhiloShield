@@ -63,8 +63,6 @@ function displayFamilyMembers() {
 
 
 window.addEventListener("load", function () {
-    document.getElementById("meetingPlace").value =
-        localStorage.getItem("meetingPlace") || "";
 
     displayFamilyMembers();
 });
