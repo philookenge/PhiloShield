@@ -1077,7 +1077,7 @@ def places():
                     server_url,
                     data={"data": overpass_query},
                     headers=headers,
-                    timeout=10
+                    timeout=(5, 25)
                 )
 
                 response.raise_for_status()
