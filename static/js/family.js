@@ -65,3 +65,19 @@ function displayFamilyMembers() {
 window.addEventListener("load", function () {
     displayFamilyMembers();
 });
+
+
+window.deleteFamilyMember = function (index) {
+    if (!confirm("Are you sure you want to delete this family member?")) {
+        return;
+    }
+
+    familyMembers.splice(index, 1);
+
+    localStorage.setItem(
+        "familyMembers",
+        JSON.stringify(familyMembers)
+    );
+
+    displayFamilyMembers();
+};
