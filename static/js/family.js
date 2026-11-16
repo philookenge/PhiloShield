@@ -63,16 +63,5 @@ function displayFamilyMembers() {
 
 
 window.addEventListener("load", function () {
-
     displayFamilyMembers();
 });
-function deleteFamilyMember(index) {
-    familyMembers.splice(index, 1);
-
-    localStorage.setItem(
-        "familyMembers",
-        JSON.stringify(familyMembers)
-    );
-
-    displayFamilyMembers();
-}
