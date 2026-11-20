@@ -1074,11 +1074,11 @@ def places():
         for server_url in overpass_servers:
             try:
                 response = requests.post(
-                    server_url,
-                    data={"data": overpass_query},
-                    headers=headers,
-                    timeout=(3, 8)
-                )
+    server_url,
+    data={"data": overpass_query},
+    headers=headers,
+    timeout=(2, 4)
+)
 
                 response.raise_for_status()
                 map_data = response.json()
@@ -1179,16 +1179,32 @@ def places():
         print("OVERPASS ERROR DETAILS:")
         print(repr(error))
 
+      
         if not cached:
-            cached = load_places_cache_file()
+            file_cache = load_places_cache_file()
+
+            if file_cache:
+                try:
+                    saved_key = (
+                        round(float(file_cache["lat"]), 2),
+                        round(float(file_cache["lon"]), 2)
+                    )
+
+                    if saved_key == cache_key:
+                        cached = file_cache
+
+                except (KeyError, ValueError, TypeError):
+                    pass
 
         if cached:
             print(
                 "Overpass failed. "
-                "Using older cached nearby places."
+                "Using cached nearby places for this area."
             )
             return jsonify(cached["places"])
 
+ 
+       
         return jsonify({
             "error": "Nearby emergency resources could not be loaded."
         }), 503

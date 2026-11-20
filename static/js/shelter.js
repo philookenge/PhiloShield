@@ -124,39 +124,26 @@ async function loadNearbyPlaces(latitude, longitude) {
             "/api/places?lat=" + latitude +
             "&lon=" + longitude;
 
-        let response = null;
+        const controller = new AbortController();
 
-        for (let attempt = 1; attempt <= 3; attempt++) {
-            try {
-                response = await fetch(url);
+        const timeoutId = setTimeout(() => {
+            controller.abort();
+        }, 15000);
 
-                if (response.ok) {
-                    break;
-                }
-            } catch (error) {
-                console.log(
-                    `Nearby places attempt ${attempt} failed.`,
-                    error
-                );
-            }
+        let response;
 
-            if (attempt < 3) {
-                await new Promise(resolve => setTimeout(resolve, 1500));
-            }
+        try {
+            response = await fetch(url, {
+                signal: controller.signal,
+                cache: "no-store"
+            });
+        } finally {
+            clearTimeout(timeoutId);
         }
-
-        if (!response || !response.ok) {
-            console.log("Render failed. Trying direct Overpass fallback.");
-
-            const fallbackPlaces = await loadNearbyPlacesDirectly(
-                latitude,
-                longitude
+        if (!response.ok) {
+            throw new Error(
+                "Nearby places server returned HTTP " + response.status
             );
-
-            response = {
-                ok: true,
-                json: async () => fallbackPlaces
-            };
         }
 
 

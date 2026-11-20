@@ -600,6 +600,7 @@ button:hover {
     right: 24px;
     bottom: 24px;
     z-index: 1000;
+    touch-action: none;
 
     display: flex;
     align-items: center;
