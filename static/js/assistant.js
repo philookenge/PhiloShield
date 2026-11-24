@@ -62,8 +62,8 @@ sendButton.addEventListener("click", async function () {
         },
         body: JSON.stringify({
             message: message,
-            latitude: userLatitude,
-            longitude: userLongitude
+            latitude: location.latitude ?? userLatitude,
+            longitude: location.longitude ?? userLongitude
         })
     });
 
