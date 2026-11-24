@@ -13,6 +13,8 @@ from safety_knowledge import find_safety_answer
 
 app = Flask(__name__)
 
+GEOAPIFY_API_KEY = os.environ.get("GEOAPIFY_API_KEY")
+
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"]) if os.environ.get("OPENAI_API_KEY") else None
 
 VAPID_PRIVATE_KEY = os.path.join(
@@ -1056,6 +1058,17 @@ def places():
     out center;
     """
 
+    geoapify_url = "https://api.geoapify.com/v2/places"
+    geoapify_categories = "healthcare.hospital,service.police,service.fire_station"
+
+    geoapify_params = {
+        "categories": geoapify_categories,
+        "filter": f"circle:{longitude},{latitude},10000",
+        "bias": f"proximity:{longitude},{latitude}",
+        "limit": 100,
+        "apiKey": GEOAPIFY_API_KEY
+    }
+
     try:
         headers = {
             "User-Agent": "SafeShield-Emergency-App/1.0",
@@ -1063,21 +1076,36 @@ def places():
         }
 
         overpass_servers = [
-            "https://overpass.kumi.systems/api/interpreter",
+            "https://overpass.nchc.org.tw/api/interpreter",
             "https://overpass-api.de/api/interpreter",
             "https://overpass.private.coffee/api/interpreter"
         ]
 
         map_data = None
         last_error = None
+        geoapify_data = None
 
-        for server_url in overpass_servers:
+        if GEOAPIFY_API_KEY:
+            try:
+                geo_response = requests.get(
+                    geoapify_url,
+                    params=geoapify_params,
+                    timeout=(3, 8)
+                )
+                geo_response.raise_for_status()
+                geoapify_data = geo_response.json()
+                print("Geoapify request successful")
+            except requests.RequestException as error:
+                print("Geoapify request failed. Using Overpass backup.")
+                geoapify_data = None
+
+        for server_url in (overpass_servers if geoapify_data is None else []):
             try:
                 response = requests.post(
     server_url,
     data={"data": overpass_query},
     headers=headers,
-    timeout=(2, 4)
+    timeout=(3, 10)
 )
 
                 response.raise_for_status()
@@ -1090,6 +1118,32 @@ def places():
                 )
                 print(repr(error))
                 last_error = error
+       
+        if geoapify_data is not None:
+            map_data = {"elements": []}
+
+            for feature in geoapify_data.get("features", []):
+                props = feature.get("properties", {})
+                categories = props.get("categories", [])
+
+                if "healthcare.hospital" in categories:
+                    place_type = "hospital"
+                elif "service.police" in categories:
+                    place_type = "police"
+                elif "service.fire_station" in categories:
+                    place_type = "fire_station"
+                else:
+                    continue
+
+                map_data["elements"].append({
+                    "lat": props.get("lat"),
+                    "lon": props.get("lon"),
+                    "tags": {
+                        "name": props.get("name") or place_type.replace("_", " ").title(),
+                        "amenity": place_type,
+                        "addr:street": props.get("formatted", "")
+                    }
+                })
 
         if map_data is None:
             raise requests.RequestException(
